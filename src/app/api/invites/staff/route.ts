@@ -8,7 +8,7 @@ import { dashboardPathForRole, type UserRole } from "@/lib/roles";
 const bodySchema = z.object({
   email: z.string().email(),
   full_name: z.string().min(1).max(200),
-  role: z.enum(["doctor", "nurse", "front_desk", "third_party_hospital"]),
+  role: z.enum(["doctor", "nurse", "front_desk"]),
 });
 
 function isAdminRole(role: UserRole | undefined): boolean {

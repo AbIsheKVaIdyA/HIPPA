@@ -9,12 +9,7 @@ export default function NurseCasesPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">My patient cases</h1>
-          <p className="text-sm text-muted-foreground">
-            Basic demographics and vitals only—no diagnosis text.
-          </p>
-        </div>
+        <h1 className="text-xl font-semibold">My patient cases</h1>
         <Link
           href="/dashboard/nurse"
           className={cn(buttonVariants({ variant: "outline" }))}

@@ -11,13 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type AuditRow = {
   id: string;
@@ -76,10 +70,6 @@ export function AuditLogPanel() {
     <Card className="glass-surface border-border/40">
       <CardHeader>
         <CardTitle className="text-lg tracking-tight">Audit log</CardTitle>
-        <CardDescription>
-          PHI-related access and security events (sign-in, case access, invites).
-          Rows are newest first.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (
@@ -116,8 +106,7 @@ export function AuditLogPanel() {
                     colSpan={6}
                     className="py-10 text-center text-sm text-muted-foreground"
                   >
-                    No audit entries yet. Run migration 005 and use the app to
-                    generate events.
+                    No audit entries yet.
                   </TableCell>
                 </TableRow>
               ) : (

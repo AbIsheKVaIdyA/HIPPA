@@ -3,10 +3,7 @@ import { FrontDeskWorkspace } from "@/components/patient-cases/front-desk-worksp
 
 export default function FrontDeskDashboardPage() {
   return (
-    <DashboardShell
-      title="Front desk"
-      description="Cases, returning-patient lookup, and registration—with optional patient portal invite sent automatically."
-    >
+    <DashboardShell title="Front desk">
       <FrontDeskWorkspace />
     </DashboardShell>
   );

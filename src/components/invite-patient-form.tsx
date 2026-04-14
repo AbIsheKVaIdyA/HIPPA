@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -53,10 +52,6 @@ export function InvitePatientForm() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Invite patient</CardTitle>
-        <CardDescription>
-          Same secure flow as admin staff invites: email link → create password
-          → patient portal only. Only front desk can send these from here.
-        </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">

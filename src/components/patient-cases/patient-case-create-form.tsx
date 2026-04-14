@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -180,20 +179,11 @@ export function PatientCaseCreateForm() {
     <Card id="register-case" className="glass-surface border-border/40">
       <CardHeader>
         <CardTitle className="text-lg">Register patient visit</CardTitle>
-        <CardDescription>
-          Encrypted intake (AES-256-GCM). When enabled, an invite email is sent
-          automatically so the patient can open their portal. Use search for
-          return visits.
-        </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-6">
           <div className="rounded-lg border border-dashed bg-muted/20 p-4 space-y-3">
             <Label className="text-base">Returning patient?</Label>
-            <p className="text-xs text-muted-foreground">
-              Search by name or email, then pick a row to prefill demographics for
-              a new visit (link stored as follow-up).
-            </p>
             <div className="flex flex-wrap gap-2">
               <Input
                 placeholder="Name or email contains…"

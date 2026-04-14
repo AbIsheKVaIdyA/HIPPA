@@ -74,8 +74,7 @@ export function PatientCareDashboard() {
   if (!data) {
     return (
       <div className="glass-surface rounded-2xl border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-        Could not load your care timeline. If you just registered, confirm your
-        visit used the same email as this account.
+        Could not load your care timeline.
       </div>
     );
   }
@@ -87,20 +86,13 @@ export function PatientCareDashboard() {
         <h2 className="mt-1 text-3xl font-semibold tracking-tight">
           {data.patientName || "Patient"}
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-          Visits, vitals, physician notes, and documents your care team shares
-          with you appear below.
-        </p>
       </div>
 
       <section className="space-y-4">
         <h3 className="text-base font-semibold">Activity timeline</h3>
         <ol className="relative space-y-4 border-s border-border ps-6">
           {data.timeline.length === 0 ? (
-            <li className="text-sm text-muted-foreground">
-              No activity yet. After your next visit is registered with your email,
-              updates will appear here.
-            </li>
+            <li className="text-sm text-muted-foreground">No activity yet.</li>
           ) : (
             [...data.timeline].reverse().map((ev, i) => (
               <li key={`${ev.at}-${i}`} className="relative">

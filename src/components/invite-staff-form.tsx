@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -20,7 +19,6 @@ const STAFF_ROLES: { value: UserRole; label: string }[] = [
   { value: "doctor", label: "Doctor" },
   { value: "nurse", label: "Nurse" },
   { value: "front_desk", label: "Front desk" },
-  { value: "third_party_hospital", label: "Partner hospital" },
 ];
 
 export function InviteStaffForm() {
@@ -61,11 +59,7 @@ export function InviteStaffForm() {
   return (
     <Card className="glass-surface border-border/40">
       <CardHeader>
-        <CardTitle className="text-base">Invite staff or partner</CardTitle>
-        <CardDescription>
-          Doctor, nurse, front desk, and partner hospital all use the same flow:
-          email link → create password → the right dashboard only.
-        </CardDescription>
+        <CardTitle className="text-base">Invite staff</CardTitle>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">

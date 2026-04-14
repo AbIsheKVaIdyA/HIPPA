@@ -106,10 +106,6 @@ export function PortalLoginForm({
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            First-time access uses the secure link emailed to you; afterward you
-            can sign in here with the password you chose.
-          </p>
         </CardFooter>
       </form>
     </Card>

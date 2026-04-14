@@ -12,13 +12,11 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PORTALS, loginPathForSlug, type PortalSlug } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -42,31 +40,16 @@ export default function HomePage() {
             </div>
             <div className="min-w-0">
               <p className="text-base font-semibold tracking-tight">CarePort</p>
-              <p className="truncate text-xs text-muted-foreground sm:text-sm">
-                Secure hospital access · role-separated portals
-              </p>
             </div>
           </div>
-          <Badge
-            variant="secondary"
-            className="hidden shrink-0 border border-border/60 bg-secondary/80 backdrop-blur sm:inline-flex"
-          >
-            PHI-aware layout
-          </Badge>
         </div>
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 px-4 py-14">
         <section className="max-w-2xl space-y-4">
-          <p className="text-sm font-medium text-primary">Hospital workspace</p>
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
             Choose your portal
           </h1>
-          <p className="text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Every card opens a dedicated sign-in for that team. Your credentials
-            only unlock the portal that matches the role you were assigned—other
-            areas stay off limits even if you try them from this page.
-          </p>
         </section>
 
         <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -94,10 +77,6 @@ export default function HomePage() {
                   </CardDescription>
                 </div>
               </CardHeader>
-              <CardContent className="text-xs leading-relaxed text-muted-foreground">
-                Sign-in is enforced by your account role. Wrong portal, wrong
-                access—by design.
-              </CardContent>
               <CardFooter className="border-t border-border/50 bg-muted/25 backdrop-blur-sm">
                 <Link
                   href={loginPathForSlug(portal.slug)}
@@ -114,12 +93,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="relative z-10 glass-header border-t py-8 text-center text-xs leading-relaxed text-muted-foreground">
-        <p className="mx-auto max-w-xl px-4">
-          Built for HIPAA-minded workflows—configure Supabase RLS, audit logging,
-          and BAAs before handling real PHI.
-        </p>
-      </footer>
+      <footer className="relative z-10 glass-header border-t py-6" />
     </div>
   );
 }

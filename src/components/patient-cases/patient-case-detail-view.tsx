@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -80,11 +79,9 @@ type DetailResponse =
 
 function VitalsHistoryCard({
   title,
-  description,
   vitals,
 }: {
   title: string;
-  description: string;
   vitals: VitalsRow[];
 }) {
   if (vitals.length === 0) return null;
@@ -92,7 +89,6 @@ function VitalsHistoryCard({
     <Card className="glass-surface border-border/40">
       <CardHeader>
         <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {vitals.map((v) => (
@@ -298,13 +294,6 @@ export function PatientCaseDetailView({
       <Card className="glass-surface border-border/40">
         <CardHeader>
           <CardTitle className="text-lg">Patient</CardTitle>
-          <CardDescription>
-            {data.scope === "nurse_basic"
-              ? "Basic demographics only (no health issue)."
-              : readOnlyPatient
-                ? "Information shared with you for this visit."
-                : "Decrypted for your role on the server."}
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -336,9 +325,6 @@ export function PatientCaseDetailView({
         <Card className="glass-surface border-border/40">
           <CardHeader>
             <CardTitle className="text-lg">Health issue</CardTitle>
-            <CardDescription>
-              {readOnlyPatient ? "Reason for this visit" : "Clinical context"}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">
@@ -349,28 +335,17 @@ export function PatientCaseDetailView({
       ) : null}
 
       {data.scope === "nurse_basic" && data.vitals.length > 0 ? (
-        <VitalsHistoryCard
-          title="Vitals history"
-          description="Your submissions for this case"
-          vitals={data.vitals}
-        />
+        <VitalsHistoryCard title="Vitals history" vitals={data.vitals} />
       ) : null}
 
       {clinical && clinical.vitals.length > 0 ? (
-        <VitalsHistoryCard
-          title="Vitals history"
-          description="From nursing"
-          vitals={clinical.vitals}
-        />
+        <VitalsHistoryCard title="Vitals history" vitals={clinical.vitals} />
       ) : null}
 
       {role === "nurse" && data.scope === "nurse_basic" ? (
         <Card className="glass-surface border-border/40">
           <CardHeader>
             <CardTitle className="text-lg">Submit vitals</CardTitle>
-            <CardDescription>
-              Visible to the assigned doctor and care team.
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
@@ -439,9 +414,6 @@ export function PatientCaseDetailView({
           <Card className="glass-surface border-border/40">
             <CardHeader>
               <CardTitle className="text-lg">Update visit</CardTitle>
-              <CardDescription>
-                Add a clinical note and/or attach a file—one or both. Save once.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -512,7 +484,6 @@ export function PatientCaseDetailView({
           <Card className="glass-surface border-border/40">
             <CardHeader>
               <CardTitle className="text-lg">Physician notes</CardTitle>
-              <CardDescription>Written by your care team</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {clinical.notes.length === 0 ? (
@@ -536,7 +507,6 @@ export function PatientCaseDetailView({
           <Card className="glass-surface border-border/40">
             <CardHeader>
               <CardTitle className="text-lg">Documents</CardTitle>
-              <CardDescription>Files your physician attached</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {clinical.files.length === 0 ? (
@@ -569,7 +539,6 @@ export function PatientCaseDetailView({
           <Card className="glass-surface border-border/40">
             <CardHeader>
               <CardTitle className="text-lg">Clinical notes</CardTitle>
-              <CardDescription>View only</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {clinical.notes.map((n) => (
@@ -589,7 +558,6 @@ export function PatientCaseDetailView({
           <Card className="glass-surface border-border/40">
             <CardHeader>
               <CardTitle className="text-lg">Attachments</CardTitle>
-              <CardDescription>View-only</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {clinical.files.length === 0 ? (
