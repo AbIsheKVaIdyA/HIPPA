@@ -41,31 +41,70 @@ export function PortalLoginForm({
     }
 
     setLoading(true);
-    const res = await fetch("/api/auth/sign-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        portal_slug: portalSlug,
-      }),
-    });
+    try {
+      const res = await fetch("/api/auth/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          portal_slug: portalSlug,
+        }),
+      });
 
-    const payload = (await res.json()) as {
-      ok?: boolean;
-      redirect?: string;
-      error?: string;
-    };
+      const raw = await res.text();
+      let payload: {
+        ok?: boolean;
+        mfa_required?: boolean;
+        challenge_id?: string;
+        email_masked?: string;
+        redirect?: string;
+        error?: string;
+      } = {};
+      try {
+        payload = raw ? (JSON.parse(raw) as typeof payload) : {};
+      } catch {
+        toast.error(
+          res.status >= 500
+            ? "Server error during sign-in. Check the terminal running `npm run dev`."
+            : "Unexpected response from server."
+        );
+        setLoading(false);
+        return;
+      }
 
-    if (!res.ok || !payload.ok || !payload.redirect) {
+      if (!res.ok) {
+        setLoading(false);
+        toast.error(payload.error ?? "Sign-in failed");
+        return;
+      }
+
+      if (payload.mfa_required && payload.challenge_id) {
+        const q = new URLSearchParams({ challenge: payload.challenge_id });
+        if (payload.email_masked) q.set("m", payload.email_masked);
+        router.push(`/auth/mfa?${q.toString()}`);
+        setLoading(false);
+        return;
+      }
+
+      if (!payload.ok || !payload.redirect) {
+        setLoading(false);
+        toast.error(payload.error ?? "Sign-in failed");
+        return;
+      }
+
+      router.push(payload.redirect);
+      router.refresh();
       setLoading(false);
-      toast.error(payload.error ?? "Sign-in failed");
-      return;
+    } catch (err) {
+      setLoading(false);
+      const msg = err instanceof Error ? err.message : "Network error";
+      toast.error(
+        msg === "Failed to fetch"
+          ? "Could not reach the server. Is `npm run dev` running on this machine?"
+          : msg
+      );
     }
-
-    router.push(payload.redirect);
-    router.refresh();
-    setLoading(false);
   }
 
   return (

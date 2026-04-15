@@ -1,14 +1,19 @@
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { getClientIp, getUserAgent } from "@/lib/http/client-ip";
+import { isMfaEmailOtpEnabled } from "@/lib/mfa/config";
+import { mapMfaChallengeError } from "@/lib/mfa/map-challenge-error";
 import {
   consumeSignInRate,
   emailBucketKey,
   ipBucketKey,
   SIGN_IN_RATE,
 } from "@/lib/rate-limit/sign-in-rate";
+import { clearSupabaseAuthCookies } from "@/lib/supabase/clear-auth-cookies";
 import {
   dashboardPathForRole,
   slugToRole,
@@ -18,7 +23,30 @@ import { authSignInSchema } from "@/lib/validators/auth-sign-in";
 
 export const runtime = "nodejs";
 
+async function safeSignOut(supabase: SupabaseClient) {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.warn("[api/auth/sign-in] signOut:", error.message);
+    }
+  } catch (e) {
+    console.warn("[api/auth/sign-in] signOut exception:", e);
+  }
+}
+
 export async function POST(request: Request) {
+  try {
+    return await handleSignIn(request);
+  } catch (e) {
+    console.error("[api/auth/sign-in] unhandled:", e);
+    return NextResponse.json(
+      { error: "Sign-in failed unexpectedly. Check the terminal for details." },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleSignIn(request: Request) {
   const ip = getClientIp(request);
   const ua = getUserAgent(request);
 
@@ -133,7 +161,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (profileError || !profile) {
-    await supabase.auth.signOut();
+    await safeSignOut(supabase);
     await writeAuditLog({
       actorUserId: userId,
       actorEmail: emailNorm,
@@ -150,7 +178,7 @@ export async function POST(request: Request) {
   }
 
   if (profile.role !== expectedRole) {
-    await supabase.auth.signOut();
+    await safeSignOut(supabase);
     await writeAuditLog({
       actorUserId: userId,
       actorEmail: profile.email,
@@ -175,6 +203,114 @@ export async function POST(request: Request) {
     );
   }
 
+  const redirect = dashboardPathForRole(profile.role as UserRole);
+
+  if (isMfaEmailOtpEnabled()) {
+    const [{ createMfaChallenge, deleteMfaChallenge }, { generateNumericOtp, maskEmail }, { sendMfaOtpEmail }] =
+      await Promise.all([
+        import("@/lib/mfa/challenge-store"),
+        import("@/lib/mfa/otp"),
+        import("@/lib/mfa/send-otp-email"),
+      ]);
+
+    const session = signData.session;
+    if (!session?.access_token || !session.refresh_token) {
+      await safeSignOut(supabase);
+      await writeAuditLog({
+        actorUserId: userId,
+        actorEmail: profile.email,
+        actorRole: profile.role,
+        action: "auth.mfa_challenge",
+        status: "failure",
+        details: { reason: "missing_session_tokens" },
+        ipAddress: ip,
+        userAgent: ua,
+      });
+      return NextResponse.json(
+        { error: "Could not start verification. Try again." },
+        { status: 500 }
+      );
+    }
+
+    const challengeId = randomUUID();
+    const otpPlain = generateNumericOtp(6);
+
+    try {
+      await createMfaChallenge({
+        challengeId,
+        otpPlain,
+        session: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        },
+        emailNorm,
+        userId,
+        redirect,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Challenge failed";
+      console.error("[api/auth/sign-in] MFA Firestore / challenge:", e);
+      await safeSignOut(supabase);
+      await writeAuditLog({
+        actorUserId: userId,
+        actorEmail: profile.email,
+        actorRole: profile.role,
+        action: "auth.mfa_challenge",
+        status: "failure",
+        details: { reason: "firestore_error", message: msg },
+        ipAddress: ip,
+        userAgent: ua,
+      });
+      return NextResponse.json({ error: mapMfaChallengeError(e) }, { status: 500 });
+    }
+
+    // Do not call auth.signOut() — even scope "local" hits /logout and can revoke the
+    // refresh token we stored in Firestore. Only clear cookies so MFA can call setSession.
+    clearSupabaseAuthCookies(cookieStore);
+
+    const targetEmail = profile.email?.trim() || email.trim();
+    const sent = await sendMfaOtpEmail(targetEmail, otpPlain);
+    if (!sent.ok) {
+      console.error("[api/auth/sign-in] MFA Resend:", sent.error);
+      await deleteMfaChallenge(challengeId);
+      await writeAuditLog({
+        actorUserId: userId,
+        actorEmail: profile.email,
+        actorRole: profile.role,
+        action: "auth.mfa_challenge",
+        status: "failure",
+        details: { reason: "email_send_failed", message: sent.error },
+        ipAddress: ip,
+        userAgent: ua,
+      });
+      const emailHint =
+        process.env.NODE_ENV === "development" ? ` ${sent.error}` : "";
+      return NextResponse.json(
+        {
+          error: `Could not send verification email.${emailHint || " Configure Resend (RESEND_API_KEY) or the from address."}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorEmail: profile.email,
+      actorRole: profile.role,
+      action: "auth.mfa_challenge",
+      status: "success",
+      details: { portal_slug },
+      ipAddress: ip,
+      userAgent: ua,
+    });
+
+    return NextResponse.json({
+      mfa_required: true,
+      challenge_id: challengeId,
+      email_masked: maskEmail(targetEmail),
+    });
+  }
+
   await writeAuditLog({
     actorUserId: userId,
     actorEmail: profile.email,
@@ -188,6 +324,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    redirect: dashboardPathForRole(profile.role as UserRole),
+    redirect,
   });
 }
