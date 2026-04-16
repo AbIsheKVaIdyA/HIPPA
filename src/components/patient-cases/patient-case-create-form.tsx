@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { normalizePhoneDigits } from "@/lib/input-helpers";
 import { cn } from "@/lib/utils";
 
 type StaffRow = { id: string; email: string | null; full_name: string };
@@ -109,7 +110,7 @@ export function PatientCaseCreateForm() {
     setPriorCaseId(m.case_id);
     setLegalName(j.patient.legalName);
     setEmail(j.patient.email);
-    setPhone(j.patient.phone);
+    setPhone(normalizePhoneDigits(j.patient.phone ?? ""));
     setDob(j.patient.dob);
     setIdProof(j.patient.idProof ?? "");
     setHealthIssue("");
@@ -130,6 +131,11 @@ export function PatientCaseCreateForm() {
       toast.error("Choose both a doctor and a nurse.");
       return;
     }
+    const phoneDigits = normalizePhoneDigits(phone);
+    if (phoneDigits.length > 0 && phoneDigits.length !== 10) {
+      toast.error("Phone must be exactly 10 digits (numbers only), or leave blank.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/patient-cases", {
@@ -140,7 +146,7 @@ export function PatientCaseCreateForm() {
           assigned_nurse_id: nurseId,
           patient_legal_name: legalName,
           patient_email: email,
-          patient_phone: phone,
+          patient_phone: phoneDigits,
           patient_dob: dob,
           patient_id_proof: idProof,
           health_issue: healthIssue,
@@ -176,9 +182,15 @@ export function PatientCaseCreateForm() {
   }
 
   return (
-    <Card id="register-case" className="glass-surface border-border/40">
-      <CardHeader>
-        <CardTitle className="text-lg">Register patient visit</CardTitle>
+    <Card
+      id="register-case"
+      className="glass-surface rounded-2xl border-border/40 shadow-md shadow-primary/[0.05]"
+    >
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl font-semibold tracking-tight">Register patient visit</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Phone accepts 10 digits only. Leave blank if not collected.
+        </p>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-6">
@@ -319,13 +331,20 @@ export function PatientCaseCreateForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ph">Phone</Label>
+              <Label htmlFor="ph">Mobile phone (10 digits)</Label>
               <Input
                 id="ph"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={10}
                 value={phone}
-                onChange={(ev) => setPhone(ev.target.value)}
+                placeholder="5551234567"
+                onChange={(ev) => setPhone(normalizePhoneDigits(ev.target.value))}
               />
+              <p className="text-xs text-muted-foreground">
+                {phone.length}/10 digits · letters and symbols are ignored
+              </p>
             </div>
           </div>
 

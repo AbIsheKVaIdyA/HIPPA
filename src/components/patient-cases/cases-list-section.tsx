@@ -5,8 +5,11 @@ import { PatientCasesTable, type CaseListRow } from "@/components/patient-cases/
 
 export function CasesListSection({
   detailBase,
+  layout = "cards",
 }: {
   detailBase: string;
+  /** `cards` for clinical portals; `table` for dense front-desk lists. */
+  layout?: "table" | "cards";
 }) {
   const [cases, setCases] = useState<CaseListRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,5 +32,5 @@ export function CasesListSection({
     );
   }
 
-  return <PatientCasesTable cases={cases} detailBase={detailBase} />;
+  return <PatientCasesTable cases={cases} detailBase={detailBase} layout={layout} />;
 }

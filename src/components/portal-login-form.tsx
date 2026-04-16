@@ -108,10 +108,14 @@ export function PortalLoginForm({
   }
 
   return (
-    <Card className="glass-surface border-border/40 shadow-2xl shadow-primary/5">
-      <CardHeader>
-        <CardTitle className="text-xl">{portalTitle}</CardTitle>
-        <CardDescription>{portalDescription}</CardDescription>
+    <Card className="glass-surface relative overflow-hidden rounded-2xl border-primary/20 shadow-2xl shadow-primary/15 ring-1 ring-primary/10">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-90"
+        aria-hidden
+      />
+      <CardHeader className="space-y-2 pb-2 pt-8">
+        <CardTitle className="text-2xl font-semibold tracking-tight">{portalTitle}</CardTitle>
+        <CardDescription className="text-base leading-relaxed">{portalDescription}</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">

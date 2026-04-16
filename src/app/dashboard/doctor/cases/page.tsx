@@ -1,23 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import { DashboardShell } from "@/components/dashboard-shell";
 import { CasesListSection } from "@/components/patient-cases/cases-list-section";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { PORTAL_NAV } from "@/lib/portal-nav";
 
 export default function DoctorCasesPage() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">My patient cases</h1>
-        <Link
-          href="/dashboard/doctor"
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          Doctor home
-        </Link>
-      </div>
+    <DashboardShell
+      portalLabel="Physician"
+      title="Patient cases"
+      description="All cases assigned to you. Select a row to open the full chart."
+      navItems={PORTAL_NAV.doctor}
+    >
       <CasesListSection detailBase="/dashboard/doctor/cases" />
-    </div>
+    </DashboardShell>
   );
 }

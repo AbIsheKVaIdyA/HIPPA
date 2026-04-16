@@ -67,9 +67,12 @@ export function AuditLogPanel() {
   const hasMore = rows.length < total;
 
   return (
-    <Card className="glass-surface border-border/40">
-      <CardHeader>
-        <CardTitle className="text-lg tracking-tight">Audit log</CardTitle>
+    <Card className="glass-surface rounded-2xl border-border/40 shadow-md shadow-primary/[0.04]">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold tracking-tight">Audit log</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Recent PHI-related actions across the system. Use for compliance review.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (

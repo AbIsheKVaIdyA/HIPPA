@@ -205,7 +205,11 @@ async function handleSignIn(request: Request) {
 
   const redirect = dashboardPathForRole(profile.role as UserRole);
 
-  if (isMfaEmailOtpEnabled()) {
+  // Demo: email OTP only for Admin portal; all other portals sign in with password only.
+  const requireEmailOtp =
+    isMfaEmailOtpEnabled() && expectedRole === "admin";
+
+  if (requireEmailOtp) {
     const [{ createMfaChallenge, deleteMfaChallenge }, { generateNumericOtp, maskEmail }, { sendMfaOtpEmail }] =
       await Promise.all([
         import("@/lib/mfa/challenge-store"),
@@ -317,7 +321,12 @@ async function handleSignIn(request: Request) {
     actorRole: profile.role,
     action: "auth.sign_in",
     status: "success",
-    details: { portal_slug },
+    details: {
+      portal_slug,
+      ...(isMfaEmailOtpEnabled() && expectedRole !== "admin"
+        ? { mfa: "password_only_non_admin_portal" as const }
+        : {}),
+    },
     ipAddress: ip,
     userAgent: ua,
   });

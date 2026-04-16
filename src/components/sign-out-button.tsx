@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function SignOutButton() {
+export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
 
   async function signOut() {
@@ -13,7 +14,13 @@ export function SignOutButton() {
   }
 
   return (
-    <Button type="button" variant="outline" size="sm" onClick={signOut}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={cn(className)}
+      onClick={signOut}
+    >
       Sign out
     </Button>
   );

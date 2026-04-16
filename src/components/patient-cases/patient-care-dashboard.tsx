@@ -88,8 +88,8 @@ export function PatientCareDashboard() {
         </h2>
       </div>
 
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold">Activity timeline</h3>
+      <section className="space-y-5">
+        <h3 className="page-section-title">Activity timeline</h3>
         <ol className="relative space-y-4 border-s border-border ps-6">
           {data.timeline.length === 0 ? (
             <li className="text-sm text-muted-foreground">No activity yet.</li>
@@ -128,9 +128,9 @@ export function PatientCareDashboard() {
         </ol>
       </section>
 
-      <section className="space-y-4">
-        <h3 className="text-base font-semibold">Visits</h3>
-        <div className="grid gap-4 md:grid-cols-2">
+      <section className="space-y-5">
+        <h3 className="page-section-title">Visits</h3>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {data.visits.map((v) => (
             <Card
               key={v.caseId}

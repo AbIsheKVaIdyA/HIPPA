@@ -42,7 +42,7 @@ export const PORTALS: PortalDefinition[] = [
     role: "nurse",
     title: "Nursing",
     description: "Care coordination, vitals, and bedside documentation.",
-    gradient: "from-sky-600/90 to-blue-700/95",
+    gradient: "from-teal-600/90 to-emerald-800/95",
   },
   {
     slug: "front-desk",

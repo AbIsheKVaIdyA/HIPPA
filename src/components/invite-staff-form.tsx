@@ -57,9 +57,12 @@ export function InviteStaffForm() {
   }
 
   return (
-    <Card className="glass-surface border-border/40">
-      <CardHeader>
-        <CardTitle className="text-base">Invite staff</CardTitle>
+    <Card className="glass-surface rounded-2xl border-border/40 shadow-md shadow-primary/[0.04]">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold tracking-tight">Invite staff</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Send an email invite with a secure link to set a password.
+        </p>
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4">

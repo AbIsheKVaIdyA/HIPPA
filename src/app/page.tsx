@@ -33,23 +33,28 @@ export default function HomePage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <header className="relative z-10 glass-header">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5">
+        <div className="mx-auto flex max-w-[min(100%,92rem)] items-center justify-between gap-4 px-5 py-6 sm:px-8 lg:px-12">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 ring-2 ring-primary/20">
-              <Activity className="size-5" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 ring-2 ring-primary/20">
+              <Activity className="size-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-base font-semibold tracking-tight">CarePort</p>
+              <p className="text-lg font-semibold tracking-tight">CarePort</p>
+              <p className="text-sm text-muted-foreground">Hospital access &amp; role portals</p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 px-4 py-14">
-        <section className="max-w-2xl space-y-4">
-          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+      <main className="relative z-10 mx-auto flex w-full max-w-[min(100%,92rem)] flex-1 flex-col gap-16 px-5 py-16 sm:px-8 lg:gap-20 lg:px-12 lg:py-20">
+        <section className="max-w-3xl space-y-5">
+          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
             Choose your portal
           </h1>
+          <p className="text-pretty text-lg text-muted-foreground sm:text-xl">
+            Sign in to the workspace that matches your role. Each portal is separated for privacy and
+            compliance.
+          </p>
         </section>
 
         <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">

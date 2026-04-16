@@ -13,7 +13,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  sanitizeBpPart,
+  sanitizeDigits,
+  sanitizeVitalDecimal,
+} from "@/lib/input-helpers";
+import { vitalsPayloadSchema } from "@/lib/validators/patient-case";
+import { PartnerReferralCard } from "@/components/patient-cases/partner-referral-card";
 
 type CaseCore = {
   id: string;
@@ -86,15 +94,15 @@ function VitalsHistoryCard({
 }) {
   if (vitals.length === 0) return null;
   return (
-    <Card className="glass-surface border-border/40">
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+    <Card className="glass-surface rounded-2xl border-primary/15 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {vitals.map((v) => (
           <div
             key={v.id}
-            className="rounded-lg border bg-muted/30 p-3 text-sm"
+            className="rounded-xl border border-border/60 bg-muted/25 p-4 text-sm shadow-sm"
           >
             <p className="text-xs text-muted-foreground">
               {new Date(v.created_at).toLocaleString()}
@@ -134,7 +142,8 @@ export function PatientCaseDetailView({
   const [vTemp, setVTemp] = useState("");
   const [vHeight, setVHeight] = useState("");
   const [vWeight, setVWeight] = useState("");
-  const [vBp, setVBp] = useState("");
+  const [vBpSys, setVBpSys] = useState("");
+  const [vBpDia, setVBpDia] = useState("");
   const [vHr, setVHr] = useState("");
   const [vSpo2, setVSpo2] = useState("");
   const [vNotes, setVNotes] = useState("");
@@ -201,31 +210,60 @@ export function PatientCaseDetailView({
   }
 
   async function submitVitals() {
+    const sys = vBpSys.trim();
+    const dia = vBpDia.trim();
+    let blood_pressure = "";
+    if (sys || dia) {
+      if (!sys || !dia) {
+        toast.error("Enter both systolic and diastolic for blood pressure (e.g. 120 and 80).");
+        return;
+      }
+      blood_pressure = `${sys}/${dia}`;
+    }
+
+    const payload = {
+      temperature_c: vTemp,
+      height_cm: vHeight,
+      weight_kg: vWeight,
+      blood_pressure,
+      heart_rate_bpm: vHr,
+      spo2_pct: vSpo2,
+      notes: vNotes,
+    };
+
+    const parsed = vitalsPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      const flat = parsed.error.flatten();
+      const fromFields = Object.values(flat.fieldErrors).flat().filter(Boolean);
+      const msg = fromFields[0] ?? flat.formErrors[0] ?? "Check vital sign values.";
+      toast.error(msg);
+      return;
+    }
+
     setSavingVitals(true);
     try {
       const res = await fetch(`/api/patient-cases/${caseId}/vitals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          temperature_c: vTemp,
-          height_cm: vHeight,
-          weight_kg: vWeight,
-          blood_pressure: vBp,
-          heart_rate_bpm: vHr,
-          spo2_pct: vSpo2,
-          notes: vNotes,
-        }),
+        body: JSON.stringify(parsed.data),
       });
-      const j = (await res.json()) as { error?: string };
+      const j = (await res.json()) as { error?: unknown };
       if (!res.ok) {
-        toast.error(j.error ?? "Failed to save vitals");
+        const err = j.error;
+        if (err && typeof err === "object" && !Array.isArray(err)) {
+          const msgs = Object.values(err as Record<string, string[]>).flat();
+          toast.error(msgs[0] ?? "Failed to save vitals");
+        } else {
+          toast.error(typeof err === "string" ? err : "Failed to save vitals");
+        }
         return;
       }
       toast.success("Vitals submitted to the care team.");
       setVTemp("");
       setVHeight("");
       setVWeight("");
-      setVBp("");
+      setVBpSys("");
+      setVBpDia("");
       setVHr("");
       setVSpo2("");
       setVNotes("");
@@ -274,12 +312,14 @@ export function PatientCaseDetailView({
   const readOnlyPatient = role === "patient" && data.scope === "patient_portal";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 sm:px-5">
         <Link href={backHref} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           ← All cases
         </Link>
-        <Badge variant="secondary">{data.case.status}</Badge>
+        <Badge variant="secondary" className="px-3 py-1 text-xs capitalize">
+          {data.case.status}
+        </Badge>
       </div>
 
       {clinical?.assignedDoctorName ? (
@@ -291,11 +331,11 @@ export function PatientCaseDetailView({
         </p>
       ) : null}
 
-      <Card className="glass-surface border-border/40">
-        <CardHeader>
-          <CardTitle className="text-lg">Patient</CardTitle>
+      <Card className="glass-surface border-border/40 shadow-md shadow-primary/[0.04]">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold tracking-tight">Patient</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+        <CardContent className="grid gap-4 text-sm sm:grid-cols-2 lg:gap-5 lg:text-base">
           <div>
             <p className="text-muted-foreground">Name</p>
             <p className="font-medium">{data.patient.legalName}</p>
@@ -334,6 +374,10 @@ export function PatientCaseDetailView({
         </Card>
       ) : null}
 
+      {role === "doctor" && data.scope === "clinical_team" ? (
+        <PartnerReferralCard caseId={caseId} />
+      ) : null}
+
       {data.scope === "nurse_basic" && data.vitals.length > 0 ? (
         <VitalsHistoryCard title="Vitals history" vitals={data.vitals} />
       ) : null}
@@ -343,49 +387,112 @@ export function PatientCaseDetailView({
       ) : null}
 
       {role === "nurse" && data.scope === "nurse_basic" ? (
-        <Card className="glass-surface border-border/40">
-          <CardHeader>
-            <CardTitle className="text-lg">Submit vitals</CardTitle>
+        <Card className="glass-surface overflow-hidden rounded-2xl border-primary/25 bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-md shadow-primary/[0.06]">
+          <CardHeader className="border-b border-primary/15 bg-primary/[0.06] pb-4">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <Activity className="size-5" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <CardTitle className="text-xl font-semibold tracking-tight">Vital signs</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Enter measurements in typical clinical ranges. Blood pressure uses systolic / diastolic
+                  (e.g. 120/80). At least one field or a note is required.
+                </p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="grid gap-5 pt-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Temperature (°C)</Label>
-              <Input value={vTemp} onChange={(e) => setVTemp(e.target.value)} />
+              <Label htmlFor="v-temp">Temperature (°C)</Label>
+              <Input
+                id="v-temp"
+                inputMode="decimal"
+                value={vTemp}
+                placeholder="36.5"
+                onChange={(e) => setVTemp(sanitizeVitalDecimal(e.target.value))}
+              />
+              <p className="text-xs text-muted-foreground">Typical oral/tympanic ~32–43°C</p>
             </div>
             <div className="space-y-2">
-              <Label>Height (cm)</Label>
-              <Input value={vHeight} onChange={(e) => setVHeight(e.target.value)} />
+              <Label htmlFor="v-hr">Heart rate (bpm)</Label>
+              <Input
+                id="v-hr"
+                inputMode="numeric"
+                value={vHr}
+                placeholder="72"
+                onChange={(e) => setVHr(sanitizeDigits(e.target.value, 3))}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Weight (kg)</Label>
-              <Input value={vWeight} onChange={(e) => setVWeight(e.target.value)} />
+              <Label htmlFor="v-h">Height (cm)</Label>
+              <Input
+                id="v-h"
+                inputMode="numeric"
+                value={vHeight}
+                placeholder="170"
+                onChange={(e) => setVHeight(sanitizeDigits(e.target.value, 3))}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Blood pressure</Label>
-              <Input value={vBp} onChange={(e) => setVBp(e.target.value)} placeholder="120/80" />
-            </div>
-            <div className="space-y-2">
-              <Label>Heart rate (bpm)</Label>
-              <Input value={vHr} onChange={(e) => setVHr(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>SpO₂ (%)</Label>
-              <Input value={vSpo2} onChange={(e) => setVSpo2(e.target.value)} />
+              <Label htmlFor="v-w">Weight (kg)</Label>
+              <Input
+                id="v-w"
+                inputMode="decimal"
+                value={vWeight}
+                placeholder="70"
+                onChange={(e) => setVWeight(sanitizeVitalDecimal(e.target.value, 6))}
+              />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Notes</Label>
+              <Label>Blood pressure (mmHg)</Label>
+              <div className="mt-1 flex max-w-sm flex-wrap items-center gap-2 sm:gap-3">
+                <Input
+                  className="max-w-[5.5rem] text-center font-mono text-base tracking-tight"
+                  inputMode="numeric"
+                  value={vBpSys}
+                  placeholder="120"
+                  aria-label="Systolic blood pressure"
+                  onChange={(e) => setVBpSys(sanitizeBpPart(e.target.value))}
+                />
+                <span className="select-none text-xl font-extralight text-muted-foreground">/</span>
+                <Input
+                  className="max-w-[5.5rem] text-center font-mono text-base tracking-tight"
+                  inputMode="numeric"
+                  value={vBpDia}
+                  placeholder="80"
+                  aria-label="Diastolic blood pressure"
+                  onChange={(e) => setVBpDia(sanitizeBpPart(e.target.value))}
+                />
+                <span className="text-xs text-muted-foreground">Systolic / diastolic</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="v-spo2">SpO₂ (%)</Label>
+              <Input
+                id="v-spo2"
+                inputMode="numeric"
+                value={vSpo2}
+                placeholder="98"
+                onChange={(e) => setVSpo2(sanitizeDigits(e.target.value, 3))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="v-notes">Notes</Label>
               <textarea
+                id="v-notes"
                 value={vNotes}
                 onChange={(e) => setVNotes(e.target.value)}
-                rows={2}
+                rows={3}
                 className={cn(
-                  "border-input bg-background w-full rounded-lg border px-2 py-2 text-sm",
+                  "border-input bg-background min-h-[88px] w-full rounded-lg border px-3 py-2 text-sm",
                   "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
                 )}
+                placeholder="Position, symptoms, device issues…"
               />
             </div>
             <div className="sm:col-span-2">
-              <Button type="button" onClick={submitVitals} disabled={savingVitals}>
+              <Button type="button" size="lg" onClick={submitVitals} disabled={savingVitals}>
                 {savingVitals ? "Saving…" : "Submit vitals"}
               </Button>
             </div>

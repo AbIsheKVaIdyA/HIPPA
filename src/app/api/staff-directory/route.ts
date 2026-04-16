@@ -8,7 +8,16 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const me = await getRequesterProfile();
-  if (!me || (me.role !== "front_desk" && me.role !== "admin")) {
+  const role = new URL(request.url).searchParams.get("role");
+
+  const allowedByRole =
+    !!me &&
+    (((me.role === "front_desk" || me.role === "admin") &&
+      (role === "doctor" || role === "nurse")) ||
+      (me.role === "doctor" && role === "third_party_hospital") ||
+      (me.role === "admin" && role === "third_party_hospital"));
+
+  if (!allowedByRole) {
     await auditPhi(request, me, {
       action: "staff_directory.list",
       status: "failure",
@@ -17,15 +26,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const role = new URL(request.url).searchParams.get("role");
-  if (role !== "doctor" && role !== "nurse") {
+  if (
+    role !== "doctor" &&
+    role !== "nurse" &&
+    role !== "third_party_hospital"
+  ) {
     await auditPhi(request, me, {
       action: "staff_directory.list",
       status: "failure",
       details: { reason: "invalid_role_param" },
     });
     return NextResponse.json(
-      { error: "Query role must be doctor or nurse" },
+      { error: "Query role must be doctor, nurse, or third_party_hospital" },
       { status: 400 }
     );
   }
