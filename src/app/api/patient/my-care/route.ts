@@ -69,6 +69,13 @@ export async function GET(request: Request) {
     isFollowUp: boolean;
     healthIssue: string | null;
     doctorName: string;
+    referrals: {
+      kind: string;
+      partnerName: string | null;
+      status: string;
+      createdAt: string;
+      submittedAt: string | null;
+    }[];
     vitals: { at: string; payload: Record<string, string> }[];
     notes: { at: string; authorName: string; body: string }[];
     files: { id: string; name: string; at: string }[];
@@ -110,6 +117,43 @@ export async function GET(request: Request) {
       .select("vitals_payload_enc, created_at")
       .eq("case_id", caseId)
       .order("created_at", { ascending: true });
+
+    const { data: referralRows } = await supabase
+      .from("partner_referral")
+      .select(
+        "referral_kind, partner_display_name, status, created_at, submitted_at"
+      )
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: true });
+
+    const referralsOut = (referralRows ?? []).map((r) => {
+      const item = {
+        kind: (r.referral_kind as string) ?? "Partner referral",
+        partnerName: (r.partner_display_name as string | null) ?? null,
+        status: (r.status as string) ?? "pending",
+        createdAt: r.created_at as string,
+        submittedAt: (r.submitted_at as string | null) ?? null,
+      };
+      timeline.push({
+        at: item.createdAt,
+        kind: "referral",
+        title: item.partnerName
+          ? `Referred to ${item.partnerName}`
+          : "Referred to partner hospital",
+        detail: `${item.kind} · ${item.status}`,
+      });
+      if (item.submittedAt) {
+        timeline.push({
+          at: item.submittedAt,
+          kind: "referral_result",
+          title: item.partnerName
+            ? `Result received from ${item.partnerName}`
+            : "Result received from partner hospital",
+          detail: item.kind,
+        });
+      }
+      return item;
+    });
 
     const vitalsOut: { at: string; payload: Record<string, string> }[] = [];
     for (const v of vitalsRows ?? []) {
@@ -186,6 +230,7 @@ export async function GET(request: Request) {
       isFollowUp: Boolean(c.prior_case_id),
       healthIssue,
       doctorName,
+      referrals: referralsOut,
       vitals: vitalsOut,
       notes: notesOut,
       files: filesOut,

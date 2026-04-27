@@ -27,6 +27,13 @@ type VisitBlock = {
   isFollowUp: boolean;
   healthIssue: string | null;
   doctorName: string;
+  referrals: {
+    kind: string;
+    partnerName: string | null;
+    status: string;
+    createdAt: string;
+    submittedAt: string | null;
+  }[];
   vitals: { at: string; payload: Record<string, string> }[];
   notes: { at: string; authorName: string; body: string }[];
   files: { id: string; name: string; at: string }[];
@@ -162,6 +169,38 @@ export function PatientCareDashboard() {
                     </p>
                   </div>
                 ) : null}
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">
+                    Partner referrals ({v.referrals.length})
+                  </p>
+                  {v.referrals.length === 0 ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No partner-hospital referrals for this visit.
+                    </p>
+                  ) : (
+                    <ul className="mt-1 space-y-2">
+                      {v.referrals.map((r, idx) => (
+                        <li key={`${r.createdAt}-${idx}`} className="rounded-md border px-2 py-2 text-xs">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium text-foreground">{r.kind}</span>
+                            <Badge variant="secondary" className="capitalize">
+                              {r.status}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-muted-foreground">
+                            {r.partnerName ? `Partner: ${r.partnerName}` : "Partner hospital"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            Referred on {new Date(r.createdAt).toLocaleString()}
+                            {r.submittedAt
+                              ? ` · Result received ${new Date(r.submittedAt).toLocaleString()}`
+                              : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <div>
                   <p className="text-xs font-medium uppercase text-muted-foreground">
                     Vitals ({v.vitals.length})

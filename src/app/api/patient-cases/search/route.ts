@@ -34,7 +34,6 @@ export async function GET(request: Request) {
   const { data: cores, error } = await supabase
     .from("patient_case_core")
     .select("id, created_at, patient_email_norm, prior_case_id")
-    .eq("created_by", me.userId)
     .order("created_at", { ascending: false })
     .limit(200);
 
