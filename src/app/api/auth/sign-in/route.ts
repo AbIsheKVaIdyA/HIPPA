@@ -13,6 +13,11 @@ import {
   ipBucketKey,
   SIGN_IN_RATE,
 } from "@/lib/rate-limit/sign-in-rate";
+import {
+  checkSignInLockout,
+  recordSignInFailure,
+  resetSignInLockout,
+} from "@/lib/rate-limit/sign-in-lockout";
 import { clearSupabaseAuthCookies } from "@/lib/supabase/clear-auth-cookies";
 import {
   dashboardPathForRole,
@@ -69,6 +74,23 @@ async function handleSignIn(request: Request) {
   }
 
   const emailNorm = email.trim().toLowerCase();
+
+  const lockCheck = await checkSignInLockout(portal_slug, emailNorm);
+  if (!lockCheck.allowed) {
+    await writeAuditLog({
+      action: "auth.sign_in",
+      status: "failure",
+      details: {
+        reason: "progressive_lockout",
+        lock_type: lockCheck.code,
+        portal_slug,
+      },
+      ipAddress: ip,
+      userAgent: ua,
+      actorEmail: emailNorm,
+    });
+    return NextResponse.json({ error: lockCheck.message }, { status: 429 });
+  }
 
   const ipOk = await consumeSignInRate(
     ipBucketKey(portal_slug, ip),
@@ -134,6 +156,7 @@ async function handleSignIn(request: Request) {
   });
 
   if (signErr || !signData.user) {
+    const lock = await recordSignInFailure(portal_slug, emailNorm);
     await writeAuditLog({
       action: "auth.sign_in",
       status: "failure",
@@ -141,11 +164,15 @@ async function handleSignIn(request: Request) {
         reason: "invalid_credentials",
         portal_slug,
         code: signErr?.code ?? null,
+        progressive_lockout: lock.allowed ? null : lock.code,
       },
       ipAddress: ip,
       userAgent: ua,
       actorEmail: emailNorm,
     });
+    if (!lock.allowed) {
+      return NextResponse.json({ error: lock.message }, { status: 429 });
+    }
     return NextResponse.json(
       { error: signErr?.message ?? "Sign-in failed" },
       { status: 401 }
@@ -178,6 +205,7 @@ async function handleSignIn(request: Request) {
   }
 
   if (profile.role !== expectedRole) {
+    const lock = await recordSignInFailure(portal_slug, emailNorm);
     await safeSignOut(supabase);
     await writeAuditLog({
       actorUserId: userId,
@@ -190,10 +218,14 @@ async function handleSignIn(request: Request) {
         portal_slug,
         expected_role: expectedRole,
         actual_role: profile.role,
+        progressive_lockout: lock.allowed ? null : lock.code,
       },
       ipAddress: ip,
       userAgent: ua,
     });
+    if (!lock.allowed) {
+      return NextResponse.json({ error: lock.message }, { status: 429 });
+    }
     return NextResponse.json(
       {
         error:
@@ -204,6 +236,7 @@ async function handleSignIn(request: Request) {
   }
 
   const redirect = dashboardPathForRole(profile.role as UserRole);
+  await resetSignInLockout(portal_slug, emailNorm);
 
   // Demo: email OTP only for Admin portal; all other portals sign in with password only.
   const requireEmailOtp =
